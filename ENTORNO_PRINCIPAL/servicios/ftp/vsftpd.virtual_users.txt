@@ -1,0 +1,11 @@
+# Virtual users file for vsftpd in BlackForge Labs FTP service
+# Format: username,password (one pair per line)
+
+ftpuser1
+ftp_pass_123456
+ftpuser2
+secure_ftp_789
+anonymous
+anon_pass_789
+ftpadmin
+admin_ftp_secure_2026

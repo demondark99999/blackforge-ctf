@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  # NGINX Reverse Proxy
+  nginx-proxy:
+    build:
+      context: ./infra/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/logs:/var/log/nginx
+      - ./infra/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web-app
+    networks:
+      - frontend
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Main Web Application
+  web-app:
+    build:
+      context: ./servicios/web-app
+    volumes:
+      - ./servicios/web-app/src:/var/www/html
+      - ./servicios/web-app/uploads:/var/www/html/uploads
+      - ./servicios/web-app/logs:/var/log/www
+    environment:
+      - DB_HOST=database
+      - DB_PORT=3306
+      - DB_NAME=forge_db
+      - DB_USER=forge_user
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+      - PHP_TIMEZONE=UTC
+    depends_on:
+      - database
+      - cache
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "/var/www/html/healthcheck.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Database Server
+  database:
+    build:
+      context: ./servicios/db
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./servicios/db/init:/docker-entrypoint-initdb.d
+      - ./servicios/db/backups:/backups
+      - ./servicios/db/logs:/var/log/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=forge_db
+      - MYSQL_USER=forge_user
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  cache:
+    build:
+      context: ./servicios/cache
+    volumes:
+      - cache_data:/data
+      - ./servicios/cache/logs:/var/log/redis
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PORT=6379
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Mail Server
+  mail:
+    build:
+      context: ./servicios/mail
+    volumes:
+      - ./servicios/mail/logs:/var/log/mail
+      - ./servicios/mail/mail:/var/mail
+    environment:
+      - MAIL_HOSTNAME=mail.forge.local
+      - MAIL_DOMAIN=forge.local
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "telnet", "localhost", "25"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FTP Server
+  ftp-server:
+    build:
+      context: ./servicios/ftp
+    volumes:
+      - ftp_data:/home/ftpusers
+      - ./servicios/ftp/logs:/var/log/vsftpd
+      - ./servicios/ftp/user_list:/etc/vsftpd.user_list:ro
+    ports:
+      - "21:21"
+      - "20:20"
+      - "21100-21110:21100-21110"
+    environment:
+      - FTP_USER=${FTP_USER}
+      - FTP_PASSWORD=${FTP_PASSWORD}
+      - PASV_ADDRESS=localhost
+      - PASV_MIN_PORT=21100
+      - PASV_MAX_PORT=21110
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "21"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  db_data:
+  cache_data:
+  ftp_data:

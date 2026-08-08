@@ -1,0 +1,110 @@
+# Configuración básica de Suricata para BlackForge Labs
+# Entorno Secundario - Configurado en modo IPS (Prevención)
+
+# Variables de dirección
+HOME_NET: "[172.18.0.0/16,172.20.0.0/16,172.21.0.0/16,172.22.0.0/16,172.23.0.0/16]"
+EXTERNAL_NET: "!$HOME_NET"
+
+# Configuración de logging
+default-log-level: info
+outputs:
+  - fast:
+      enabled: yes
+      filename: fast.log
+      append: yes
+  - alert-debug:
+      enabled: yes
+      filename: alert-debug.log
+      append: yes
+  - http-log:
+      enabled: yes
+      filename: http.log
+      append: yes
+  - tls-log:
+      enabled: yes
+      filename: tls.log
+      append: yes
+  - file-store:
+      enabled: yes
+      version: 2
+      directory: filestore
+      limit: 100 mb
+
+# Configuración de captura
+af-packet:
+  - interface: eth0
+    threads: auto
+    defrag: yes
+    use-mmap: yes
+    tpacket-v3: yes
+
+# Configuración de decodificadores
+decoder:
+  # Teredo
+  teredo:
+    enabled: true
+
+  # IP
+  ip:
+    enabled: true
+    check-header: yes
+
+  # Ethernet
+  ethernet:
+    enabled: true
+
+# Configuración de detección
+detect:
+  profile: balanced
+  custom-values:
+    toclient_tosub: 150
+    toclient_toclient: 150
+    toserver_tosub: 150
+    toserver_toclient: 150
+  sgh-memo: 1024
+  search-method ac
+  search-optimize
+  search-method-bm
+  search-method hippy
+
+# Configuración de archivos de reglas
+rule-files:
+  - snort.rules
+  - local.rules
+
+# Configuración de salidas
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert:
+            payload: yes
+            payload-printable: yes
+            payload-hex: yes
+            metadata: yes
+            packet: yes
+            metadata: yes
+        - http:
+            extended: yes
+            request-body: yes
+            response-body: yes
+        - dns:
+            query: yes
+            answer: yes
+        - tls:
+            subject: yes
+            issuer: yes
+            session-resumed: yes
+        - files:
+            filename: yes
+            magic: yes
+            SHA256: yes
+        - ssh:
+            software: yes
+            version: yes
+        - http:
+            extended: yes
+            request-body: yes
+            response-body: yes

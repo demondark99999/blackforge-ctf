@@ -1,0 +1,65 @@
+# Reglas de iptables para BlackForge Labs - Instalación Omega
+# Firewall perimetral para entorno de entrenamiento CTF
+# Estas reglas se cargan al iniciar el contenedor de firewall
+
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+
+# Tráfico de loopback
+-A INPUT -i lo -j ACCEPT
+-A OUTPUT -o lo -j ACCEPT
+
+# Tráfico establecido y relacionado
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Permitir ping (ICMP echo request)
+-A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+-A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
+
+# Permitir tráfico SSH para administración (puerto 22)
+# Vulnerabilidad intencional: puerto SSH expuesto para ejercicios de fuerza bruta
+-A INPUT -p tcp --dport 22 -m state --state NEW -j ACCEPT
+
+# Permitir tráfico HTTP y HTTPS desde cualquier origen
+-A INPUT -p tcp -m multiport --dports 80,443 -m state --state NEW -j ACCEPT
+
+# Permitir tráfico FTP
+-A INPUT -p tcp --dport 21 -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 20 -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --match multiport --dports 21100:21110 -m state --state NEW -j ACCEPT
+
+# Permitir tráfico de correo SMTP
+-A INPUT -p tcp --dport 25 -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 587 -m state --state NEW -j ACCEPT
+
+# Permitir tráfico de base de datos (solo desde redes internas)
+# Vulnerabilidad intencional: MySQL accesible desde cualquier IP para ejercicios de inyección
+-A INPUT -p tcp --dport 3306 -m state --state NEW -j ACCEPT
+
+# Permitir tráfico de Redis (solo desde redes internas)
+# Vulnerabilidad intencional: Redis accesible desde cualquier IP para ejercicios de acceso no autorizado
+-A INPUT -p tcp --dport 6379 -m state --state NEW -j ACCEPT
+
+# Registrar paquetes descartados (limitado para evitar llenar logs)
+-A INPUT -m limit --limit 5/min -j LOG --log-prefix "IPTABLES_DROP: " --log-level 4
+
+# Rejected todo lo demás
+-A INPUT -j REJECT --reject-with icmp-port-unreachable
+-A FORWARD -j REJECT --reject-with icmp-port-unreachable
+
+COMMIT
+
+# NAT y forwarding (si se necesita)
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+
+# Enmascarar tráfico saliente para contenedores internos
+-A POSTROUTING -s 172.18.0.0/16 ! -o docker0 -j MASQUERADE
+
+COMMIT

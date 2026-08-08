@@ -1,0 +1,49 @@
+# Reglas locales de Suricata para BlackForge Labs - Entrenamiento CTF
+# Estas reglas están diseñadas para ayudar en el entrenamiento y demostrar conceptos IPS
+
+# Regla para detectar y bloquear intentos de conexión a puertos comunes de servicios (IPS mode)
+drop tcp any any -> 172.18.0.0/16 22 (msg:"INTENTO DE ACCESO SSH BLOQUEADO - POSIBLE FUERZA BRUTA"; flags:S; threshold:type both, track by_src, count 5, seconds 60; sid:2000001; rev:1;)
+drop tcp any any -> 172.18.0.0/16 23 (msg:"INTENTO DE ACCESO TELNET BLOQUEADO"; flags:S; sid:2000002; rev:1;)
+drop tcp any any -> 172.18.0.0/16 3306 (msg:"INTENTO DE ACCESO MYSQL BLOQUEADO - POSIBLE INYECCION"; flags:S; sid:2000003; rev:1;)
+drop tcp any any -> 172.18.0.0/16 6379 (msg:"INTENTO DE ACCESO REDIS BLOQUEADO - POSIBLE ACCESO NO AUTORIZADO"; flags:S; sid:2000004; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"TRÁFICO HTTP DETECTADO Y REGISTRADO"; sid:2000005; rev:1;)
+drop tcp any any -> 172.18.0.0/16 443 (msg:"TRÁFICO HTTPS DETECTADO Y REGISTRADO"; sid:2000006; rev:1;)
+
+# Reglas para detectar y bloquear escaneos de puertos
+drop tcp any any -> 172.18.0.0/16 !80 (msg:"POSIBLE ESCANEO DE PUERTOS BLOQUEADO - ACCESO A PUERTO NO HTTP"; flags:S; threshold:type both, track by_dst, count 10, seconds 30; sid:2000010; rev:1;)
+drop udp any any -> 172.18.0.0/16 (msg:"TRÁFICO UDP DETECTADO Y BLOQUEADO - POSIBLE ESCANEO"; sid:2000011; rev:1;)
+
+# Regla para detectar y bloquear posibles intentos de inyección SQL en tráfico HTTP
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE INTENTO DE INYECCION SQL BLOQUEADO EN PARAMETROS GET"; content:"SELECT"; nocase; depth 50; http_method; content:"GET"; http_uri; content:"'"; http_uri; sid:2000020; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE INTENTO DE INYECCION SQL BLOQUEADO EN PARAMETROS POST"; content:"SELECT"; nocase; depth 100; http_method; content:"POST"; http_uri; content:"'"; http_uri; sid:2000021; rev:1;)
+
+# Regla para detectar y bloquear posibles intentos de XSS en tráfico HTTP
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE INTENTO DE XSS BLOQUEADO - SCRIPT TAG DETECTADO"; content:"<script>"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:2000030; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE INTENTO DE XSS BLOQUEADO - JAVASCRIPT EN URL"; content:"javascript:"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:2000031; rev:1;)
+
+# Regla para detectar y bloquear accesos a directorios sensibles
+drop tcp any any -> 172.18.0.0/16 80 (msg:"ACCESO A DIRECTORIO SENSIBLE BLOQUEADO - POSIBLE PATH TRAVERSAL"; content:"/etc/passwd"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:2000040; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"ACCESO A DIRECTORIO WEB CONFIG BLOQUEADO - POSIBLE EXPOSICION"; content:"config.php"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:2000041; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"ACCESO A ARCHIVO DE LOGS BLOQUEADO - POSIBLE EXFILTRACION"; content:".log"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:2000042; rev:1;)
+
+# Regla para detectar y bloquear comando injection potencial
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE COMANDO INJECTION BLOQUEADO - CARACTERES DE SHELL"; content:";"; http_method; content:"GET"; http_uri; content:"|"; http_uri; sid:2000050; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE COMANDO INJECTION BLOQUEADO - SUSTITUCION DE COMANDO"; content:"$("; http_method; content:"GET"; http_uri; sid:2000051; rev:1;)
+
+# Regla para detectar y bloquear user-agents sospechosos
+drop tcp any any -> 172.18.0.0/16 80 (msg:"USER-AGENT SOSPECHOSO BLOQUEADO - POSIBLE HERRAMIENTA DE PENTEST"; content:"sqlmap"; nocase; http_header; content:"User-Agent"; sid:2000060; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"USER-AGENT SOSPECHOSO BLOQUEADO - POSIBLE HERRAMIENTA DE PENTEST"; content:"nmap"; nocase; http_header; content:"User-Agent"; sid:2000061; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"USER-AGENT SOSPECHOSO BLOQUEADO - POSIBLE HERRAMIENTA DE PENTEST"; content:"burpsuite"; nocase; http_header; content:"User-Agent"; sid:2000062; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"USER-AGENT SOSPECHOSO BLOQUEADO - POSIBLE HERRAMIENTA DE PENTEST"; content:"nikto"; nocase; http_header; content:"User-Agent"; sid:2000063; rev:1;)
+
+# Regla para detectar y bloquear posibles intentos de descarga de herramientas maliciosas
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE DESCARGA DE HERRAMIENTA MALICIOSA BLOQUEADA - EXTENSION EXE"; content:".exe"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:2000070; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE DESCARGA DE HERRAMIENTA MALICIOSA BLOQUEADA - ARCHIVO COMPRIMIDO"; content:".zip"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:2000071; rev:1;)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE DESCARGA DE HERRAMIENTA MALICIOSA BLOQUEADA - ARCHIVO DE SCRIPT"; content:".sh"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:2000072; rev:1;)
+
+# Regla para rate limiting de conexiones HTTP (ejemplo de limite de velocidad)
+drop tcp any any -> 172.18.0.0/16 80 (msg:"LIMITE DE VELOCIDAD EXCEDIDO - POSIBLE ATAQUE DE DENEGACION DE SERVICIO"; threshold:type both, track by_dst, count 100, seconds 10; sid:2000080; rev:1;)
+
+# Regla para detectar tráfico en horarios inusuales (actividad fuera de horario laboral)
+# Nota: Esta regla requiere tiempo del sistema y puede no funcionar en todos los entornos
+# drop tcp any any -> 172.18.0.0/16 80 (msg:"TRÁFICO EN HORARIO INUSUAL BLOQUEADO - POSIBLE ACTIVIDAD MALICIOSA"; time:from 02:00:00 to 05:00:00; sid:2000090; rev:1;)

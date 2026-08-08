@@ -1,0 +1,401 @@
+/* Estilos básicos para BlackForge Labs - Instalación Omega */
+/* Diseño limpio y profesional para entorno de entrenamiento CTF */
+
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --gray-light: #e9ecef;
+    --gray-dark: #6c757d;
+
+    --border-radius: 4px;
+    --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    line-height: 1.6;
+    color: var(--dark-color);
+    background-color: var(--light-color);
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Header y navegación */
+header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1.5rem 0;
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+nav {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    transition: background-color 0.3s;
+}
+
+nav a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Main content */
+main {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h2 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.widget {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+}
+
+.widget h3 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.activity-list {
+    list-style: none;
+}
+
+.activity-list li {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--gray-light);
+}
+
+.activity-list li:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.activity-icon span {
+    font-size: 1.2rem;
+}
+
+.activity-list h4 {
+    margin: 0 0 0.25rem 0;
+    color: var(--dark-color);
+}
+
+.activity-list p {
+    margin: 0;
+    color: var(--gray-dark);
+    font-size: 0.9rem;
+}
+
+.messages-list {
+    margin-top: 1rem;
+}
+
+.message {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: var(--border-radius);
+    border-left: 4px solid;
+}
+
+.message.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.message.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.message.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: var(--secondary-color);
+    color: white;
+    text-decoration: none;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    width: 100px;
+    transition: transform 0.2s, background-color 0.3s;
+}
+
+.btn-action:hover {
+    transform: translateY(-3px);
+    background-color: var(--accent-color);
+}
+
+.btn-action span {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.system-status {
+    margin-top: 1rem;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--gray-light);
+}
+
+.status-item:first-child {
+    border-top: none;
+}
+
+.status-item label {
+    font-weight: 500;
+}
+
+.status-indicator {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.status-indicator.status-ok {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-indicator.status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-indicator.status-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Formularios */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-light);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+}
+
+.btn-primary,
+.btn-secondary {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background-color: var(--gray-light);
+    color: var(--dark-color);
+}
+
+.btn-secondary:hover {
+    background-color: var(--gray-dark);
+    color: white;
+}
+
+/* Alertas */
+.alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--border-radius);
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+/* Login específico */
+.login-container {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--light-color);
+}
+
+.login-box {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+}
+
+.login-box h2 {
+    text-align: center;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.login-box p {
+    text-align: center;
+    color: var(--gray-dark);
+    margin-bottom: 1.5rem;
+}
+
+.login-info {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gray-light);
+    font-size: 0.9rem;
+    color: var(--gray-dark);
+}
+
+.login-info h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 1.5rem 0;
+    margin-top: 2rem;
+    color: var(--gray-dark);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--gray-light);
+}
+
+footer p {
+    margin: 0.5rem 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    nav {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .login-box {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+}

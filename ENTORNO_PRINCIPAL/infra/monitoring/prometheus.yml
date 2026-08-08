@@ -1,0 +1,26 @@
+# Configuración básica de Prometheus para BlackForge Labs
+# Este archivo se incluye por completitud, aunque en esta implementación
+# el agente de monitoreo expone métricas directamente en formato Prometheus
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'blackforge_monitoring'
+    static_configs:
+      - targets: ['localhost:9100']
+    metrics_path: /
+    scheme: http
+
+  - job_name: 'web_app'
+    static_configs:
+      - targets: ['web-app:8080']
+    metrics_path: /healthz
+    scheme: http
+
+  - job_name: 'database'
+    static_configs:
+      - targets: ['database:3306']
+    # En una implementación real, usaríamos un exporter de MySQL
+    # Aquí solo verificamos conectividad básica

@@ -1,0 +1,70 @@
+# Configuración de Postfix para BlackForge Labs - Instalación Omega
+# Entorno de entrenamiento CTF - Configuración intencionalmente permisiva para ejercicios
+
+# Información básica
+myhostname = mail.forgelabs.local
+mydomain = forge.labs.local
+myorigin = $mydomain
+inet_interfaces = all
+inet_protocols = all
+
+# Servicio de correo
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+local_recipient_maps =
+
+# Reenvío y relay
+relayhost =
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
+# Vulnerabilidad intencional: red abierta para ejercicios de relay
+# En producción debería ser más restrictiva
+mynetworks = 0.0.0.0/0
+
+# Reescritura de direcciones
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+
+# Formato de correo
+mailbox_size_limit = 0
+recipient_delimiter = +
+
+# Seguridad TLS (deshabilitada para facilitar ejercicios)
+smtp_tls_security_level = may
+smtpd_tls_security_level = may
+smtp_tls_note_starttls_offer = yes
+smtpd_tls_loglevel = 1
+
+# Límite de mensajes
+default_process_limit = 100
+queue_minfree = 0
+message_size_limit = 10240000
+
+# Interfaces de escucha
+smtpd_bind_address = 0.0.0.0
+
+# Autenticación SASL (simplificada para entrenamiento)
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_security_options = noanonymous
+smtpd_sasl_local_domain =
+broken_sasl_auth_clients = yes
+
+# Reglas de destinatario (intencionalmente permisivas)
+smtpd_recipient_restrictions =
+    permit_sasl_authenticated,
+    permit_mynetworks,
+    reject_unauth_destination,
+    # Vulnerabilidad intencional: permite relay desde cualquier origen para ejercicios
+    permit
+
+# Reglas de remitente
+smtpd_sender_restrictions =
+    permit_sasl_authenticated,
+    permit_mynetworks,
+    reject_unknown_sender_domain
+
+# Registros
+mail_debug = yes
+verbose_log_level = 1
+anvil_rate_time_unit = 60
+anvil_rate_threshold = 100

@@ -1,0 +1,35 @@
+# Inventario de Ansible para BlackForge Labs
+# Entorno Secundario - Definición de hosts y grupos para automatización
+
+# Definición de grupos
+[blackforge_servers]
+router
+vpn-server
+ids-snort
+ids-suricata
+elasticsearch
+logstash
+kibana
+prometheus
+grafana
+alertmanager
+filebeat
+
+[blackforge_clients]
+# Aquí se podrían agregar hosts externos que se gestionan a través de este entorno
+# ejemplo: cliente1 ansible_host=192.168.1.100
+
+[blackforge_management]
+localhost ansible_connection=local
+
+# Variables de grupo
+[blackforge_servers:vars]
+ansible_user=root
+ansible_python_interpreter=/usr/bin/python3
+
+[blackforge_clients:vars]
+ansible_user=admin
+ansible_ssh_private_key_file=/home/admin/.ssh/id_rsa
+
+[blackforge_management:vars]
+ansible_connection=local

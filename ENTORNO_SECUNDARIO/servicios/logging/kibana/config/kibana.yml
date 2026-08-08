@@ -1,0 +1,39 @@
+# Configuración básica de Kibana para BlackForge Labs
+# Entorno Secundario - Visualización y análisis de datos
+
+# Configuración del servidor
+server.host: "0"
+server.name: "kibana-omega"
+server.shutdownTimeout: "5s"
+server.maxPayloadBytes: 1048576
+
+# Configuración de Elasticsearch
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.username: "elastic"
+elasticsearch.password: "changeme"
+elasticsearch.requestTimeout: 60000
+elasticsearch.preserveHost: true
+
+# Configuración de monitoreo
+monitoring.ui.container.elasticsearch.enabled: true
+
+# Configuración de reporting (deshabilitado por defecto)
+reporting.enabled: false
+
+# Configuración de seguridad (deshabilitada para entorno de entrenamiento)
+xpack.security.enabled: false
+
+# Configuración de interfaz de usuario
+uiSettings:
+  overrides:
+    "dateFormat:tz": "UTC"
+    "defaultIndex": "blackforge-*"
+
+# Configuración de arribado de archivos
+file:
+  temp: /tmp/kibana
+
+# Configuración de telemetry (deshabilitado para privacidad)
+telemetry:
+  enabled: false
+  optOut: true

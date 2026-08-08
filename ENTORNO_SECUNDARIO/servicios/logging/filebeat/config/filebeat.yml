@@ -1,0 +1,99 @@
+# Configuración básica de Filebeat para BlackForge Labs
+# Entorno Secundario - Envío de logs desde el entorno principal
+
+# Configuración de inputs
+filebeat.inputs:
+  # Logs de NGINX del entorno principal
+  - type: filestream
+    enabled: true
+    paths:
+      - /var/log/nginx/*.log
+    fields:
+      type: nginx
+      environment: principal
+    fields_under_root: true
+    ignore_older: 24h
+
+  # Logs de la aplicación web del entorno principal
+  - type: filestream
+    enabled: true
+    paths:
+      - /var/log/www/*.log
+    fields:
+      type: web-app
+      environment: principal
+    fields_under_root: true
+    ignore_older: 24h
+
+  # Logs de la base de datos del entorno principal
+  - type: filestream
+    enabled: true
+    paths:
+      - /var/log/mysql/*.log
+    fields:
+      type: mysql
+      environment: principal
+    fields_under_root: true
+    ignore_older: 24h
+
+  # Logs de Redis del entorno principal
+  - type: filestream
+    enabled: true
+    paths:
+      - /var/log/redis/*.log
+    fields:
+      type: redis
+      environment: principal
+    fields_under_root: true
+    ignore_older: 24h
+
+  # Logs del servicio de correo del entorno principal
+  - type: filestream
+    enabled: true
+    paths:
+      - /var/log/mail/*.log
+    fields:
+      type: mail
+      environment: principal
+    fields_under_root: true
+    ignore_older: 24h
+
+  # Logs del servicio FTP del entorno principal
+  - type: filestream
+    enabled: true
+    paths:
+      - /var/log/vsftpd/*.log
+    fields:
+      type: ftp
+      environment: principal
+    fields_under_root: true
+    ignore_older: 24h
+
+# Configuración de procesadores
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
+
+# Configuración de salida
+output.logstash:
+  # Los hosts pueden ser remodelados variables de entorno
+  hosts: ["logstash:5044"]
+  # Opcional: SSL
+  #ssl.certificate_authorities: ["/etc/pki/tls/certs/ca.pem"]
+  #ssl.certificate: "/etc/pki/tls/certs/cert.pem"
+  #ssl.key: "/etc/pki/tls/private/key.pem"
+
+# Configuración de carga (útil para escalabilidad)
+loadbalance:
+  overload_detection_enabled: true
+
+# Configuración de monitoreo
+monitoring:
+  enabled: false
+  #elasticsearch:
+  #  hosts: ["localhost:9200"]
+  #  username: "filebeat_system"
+  #  password: "changeme"

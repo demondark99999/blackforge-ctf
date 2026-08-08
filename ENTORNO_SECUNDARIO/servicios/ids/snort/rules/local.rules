@@ -1,0 +1,46 @@
+# Reglas locales de Snort para BlackForge Labs - Entrenamiento CTF
+# Estas reglas están diseñadas para ayudar en el entrenamiento y demostrar conceptos
+
+# Regla para detectar intentos de conexión a puertos comunes de servicios
+alert tcp any any -> 172.18.0.0/16 22 (msg:"INTENTO DE ACCESO SSH - POSIBLE FUERZA BRUTA"; flags:S; threshold:type both, track by_src, count 5, seconds 60; sid:1000001; rev:1;)
+alert tcp any any -> 172.18.0.0/16 23 (msg:"INTENTO DE ACCESO TELNET"; flags:S; sid:1000002; rev:1;)
+alert tcp any any -> 172.18.0.0/16 3306 (msg:"INTENTO DE ACCESO MYSQL POSIBLE INYECCION"; flags:S; sid:1000003; rev:1;)
+alert tcp any any -> 172.18.0.0/16 6379 (msg:"INTENTO DE ACCESO REDIS - POSIBLE ACCESO NO AUTORIZADO"; flags:S; sid:1000004; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"TRÁFICO HTTP DETECTADO"; sid:1000005; rev:1;)
+alert tcp any any -> 172.18.0.0/16 443 (msg:"TRÁFICO HTTPS DETECTADO"; sid:1000006; rev:1;)
+
+# Reglas para detectar escaneos de puertos
+alert tcp any any -> 172.18.0.0/16 !80 (msg:"POSIBLE ESCANEO DE PUERTOS - ACCESO A PUERTO NO HTTP"; flags:S; threshold:type both, track by_dst, count 10, seconds 30; sid:1000010; rev:1;)
+alert udp any any -> 172.18.0.0/16 (msg:"TRÁFICO UDP DETECTADO - POSIBLE ESCANEO"; sid:1000011; rev:1;)
+
+# Regla para detectar posibles intentos de inyección SQL en tráfico HTTP
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE INTENTO DE INYECCION SQL EN PARAMETROS GET"; content:"SELECT"; nocase; depth 50; http_method; content:"=>"GET"; http_uri; content:"'"; http_uri; sid:1000020; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE INTENTO DE INYECCION SQL EN PARAMETROS POST"; content:"SELECT"; nocase; depth 100; http_method; content:"POST"; http_uri; content:"'"; http_uri; sid:1000021; rev:1;)
+
+# Regla para detectar posibles intentos de XSS en tráfico HTTP
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE INTENTO DE XSS - SCRIPT TAG DETECTADO"; content:"<script>"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:1000030; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE INTENTO DE XSS - JAVASCRIPT EN URL"; content:"javascript:"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:1000031; rev:1;)
+
+# Regla para detectar accesos a directorios sensibles
+alert tcp any any -> 172.18.0.0/16 80 (msg:"ACCESO A DIRECTORIO SENSIBLE POSIBLE PATH TRAVERSAL"; content:"/etc/passwd"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:1000040; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"ACCESO A DIRECTORIO WEB CONFIG POSIBLE EXPOSICION"; content:"config.php"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:1000041; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"ACCESO A ARCHIVO DE LOGS POSIBLE EXFILTRACION"; content:".log"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:1000042; rev:1;)
+
+# Regla para detectar comando injection potencial
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE COMANDO INJECTION - CARACTERES DE SHELL"; content:";"; http_method; content:"GET"; http_uri; content:"|"; http_uri; sid:1000050; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE COMANDO INJECTION - SUSTITUCION DE COMANDO"; content:"$("; http_method; content:"GET"; http_uri; sid:1000051; rev:1;)
+
+# Regla para detectar user-agents sospechosos
+alert tcp any any -> 172.18.0.0/16 80 (msg:"USER-AGENT SOSPECHOSO - POSIBLE HERRAMIENTA DE PENTEST"; content:"sqlmap"; nocase; http_header; content:"User-Agent"; sid:1000060; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"USER-AGENT SOSPECHOSO - POSIBLE HERRAMIENTA DE PENTEST"; content:"nmap"; nocase; http_header; content:"User-Agent"; sid:1000061; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"USER-AGENT SOSPECHOSO - POSIBLE HERRAMIENTA DE PENTEST"; content:"burpsuite"; nocase; http_header; content:"User-Agent"; sid:1000062; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"USER-AGENT SOSPECHOSO - POSIBLE HERRAMIENTA DE PENTEST"; content:"nikto"; nocase; http_header; content:"User-Agent"; sid:1000063; rev:1;)
+
+# Regla para detectar posibles intentos de descarga de herramientas maliciosas
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE DESCARGA DE HERRAMIENTA MALICIOSA - EXTENSION EXE"; content:".exe"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:1000070; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE DESCARGA DE HERRAMIENTA MALICIOSA - ARCHIVO COMPRIMIDO"; content:".zip"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:1000071; rev:1;)
+alert tcp any any -> 172.18.0.0/16 80 (msg:"POSIBLE DESCARGA DE HERRAMIENTA MALICIOSA - ARCHIVO DE SCRIPT"; content:".sh"; nocase; depth 100; http_method; content:"GET"; http_uri; sid:1000072; rev:1;)
+
+# Regla para detectar tráfico en horarios inusuales (actividad fuera de horario laboral)
+# Nota: Esta regla requiere tiempo del sistema y puede no funcionar en todos los entornos
+# alert tcp any any -> 172.18.0.0/16 80 (msg:"TRÁFICO EN HORARIO INUSUAL - POSIBLE ACTIVIDAD MALICIOSA"; time:from 02:00:00 to 05:00:00; sid:1000080; rev:1;)

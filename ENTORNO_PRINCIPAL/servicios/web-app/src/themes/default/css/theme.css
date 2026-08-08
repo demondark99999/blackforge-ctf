@@ -1,0 +1,196 @@
+/* Tema Predeterminado - BlackForge Labs */
+/* Extiende los estilos base con personalizaciones específicas del tema */
+
+/* Variables del tema (sobrescribiendo las variables globales si se desea) */
+:root {
+    --theme-primary: #2c3e50;
+    --theme-secondary: #3498db;
+    --theme-accent: #e74c3c;
+    --theme-success: #27ae60;
+    --theme-warning: #f39c12;
+    --theme-info: #17a2b8;
+    --theme-light: #f8f9fa;
+    --theme-dark: #343a40;
+}
+
+/* Estilos específicos del tema */
+body {
+    /* El tema predeterminado usa los estilos base */
+}
+
+/* Header del tema */
+.site-header {
+    background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+}
+
+.site-header h1,
+.site-header nav a {
+    color: white;
+}
+
+.site-header nav a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Botones del tema */
+.btn-primary {
+    background-color: var(--theme-secondary);
+    border-color: var(--theme-secondary);
+}
+
+.btn-primary:hover {
+    background-color: var(--theme-accent);
+    border-color: var(--theme-accent);
+}
+
+.btn-secondary {
+    background-color: var(--theme-light);
+    color: var(--theme-dark);
+    border-color: var(--theme-gray);
+}
+
+.btn-secondary:hover {
+    background-color: var(--theme-gray);
+    color: white;
+}
+
+/* Tarjetas y widgets del tema */
+.widget,
+.profile-card,
+.login-box {
+    border: 1px solid var(--theme-gray);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.widget h3,
+.profile-card h2,
+.login-box h2 {
+    color: var(--theme-dark);
+    border-bottom-color: var(--theme-gray);
+}
+
+/* Estado del sistema */
+.status-indicator.status-ok {
+    background-color: var(--theme-success);
+    color: white;
+}
+
+.status-indicator.status-error {
+    background-color: var(--theme-accent);
+    color: white;
+}
+
+.status-indicator.status-warning {
+    background-color: var(--theme-warning);
+    color: white;
+}
+
+/* Alertas del tema */
+.alert {
+    border-left: 4px solid;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+/* Estilos de formulario del tema */
+.form-group label {
+    font-weight: 600;
+    color: var(--theme-dark);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    border-color: var(--theme-light);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--theme-secondary);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25);
+}
+
+/* Pagination */
+.pagination-btn {
+    background-color: var(--theme-secondary);
+    color: white;
+}
+
+.pagination-btn:hover {
+    background-color: var(--theme-accent);
+}
+
+.pagination-current {
+    background-color: var(--theme-secondary);
+    color: white;
+}
+
+/* Gesión de archivos y galerías */
+.file-item,
+.gallery-item {
+    border: 1px solid var(--theme-gray);
+}
+
+.file-item:hover,
+.gallery-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.file-icon,
+.gallery-item-image {
+    background-color: var(--theme-light);
+}
+
+/* Badges */
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.badge-private {
+    background-color: var(--theme-warning);
+    color: white;
+}
+
+.badge-public {
+    background-color: var(--theme-success);
+    color: white;
+}
+
+/* Responsividad del tema */
+@media (max-width: 768px) {
+    .site-header {
+        height: auto;
+        padding: 1rem 0;
+    }
+
+    .site-header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+}

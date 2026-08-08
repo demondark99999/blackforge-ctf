@@ -1,0 +1,90 @@
+---
+# Playbook de ejemplo para BlackForge Labs
+# Entorno Secundario - Automatización básica de tareas de monitoreo y mantenimiento
+
+- name: Verificar estado de servicios críticos en todos los servidores
+  hosts: blackforge_servers
+  become: false
+  tasks:
+
+    - name: Verificar que el servicio SSH esté ejecutándose
+      ansible.builtin.service:
+        name: ssh
+        state: started
+      register: ssh_status
+      ignore_errors: true
+
+    - name: Verificar uso de disco en particiones principales
+      ansible.builtin.command: df -h /
+      register: disk_usage
+      changed_when: false
+
+    - name: Verificar memoria disponible
+      ansible.builtin.command: free -m
+      register: memory_usage
+      changed_when: false
+
+    - name: Recopilar información de red
+      ansible.builtin.command: ip addr show
+      register: network_info
+      changed_when: false
+
+    - name: Mostrar resultados de verificación
+      ansible.builtin.debug:
+        msg: |
+          Host: {{ inventory_hostname }}
+          SSH Status: {{ 'OK' if ssh_status is defined and ssh_status.state == 'started' else 'FAILED' }}
+          Disk Usage: {{ disk_usage.stdout_lines[0] if disk_usage is defined else 'N/A' }}
+          Memory Usage: {{ memory_usage.stdout_lines[0] if memory_usage is defined else 'N/A' }}
+
+- name: Recopilar y centralizar logs de servicios de IDS
+  hosts: [ids-snort, ids-suricata]
+  become: false
+  tasks:
+
+    - name: Copiar logs recientes de Snort a directorio central
+      ansible.builtin.fetch:
+        src: /var/log/snort/snort.log
+        dest: /opt/playbooks/logs/snort/{{ inventory_hostname }}_snort.log
+        flat: yes
+      when: ansible_facts['distribution'] == "Alpine" or ansible_facts['os_family'] == "Debian"
+      ignore_errors: true
+
+    - name: Copiar registros recientes de Suricata a directorio central
+      ansible.builtin.fetch:
+        src: /var/log/suricata/fast.log
+        dest: /opt/playbooks/logs/suricata/{{ inventory_hostname }}_suricata.log
+        flat: yes
+      when: ansible_facts['distribution'] == "Alpine" or ansible_facts['os_family'] == "Debian"
+      ignore_errors: true
+
+- name: Generar reporte diario de estado del sistema
+  hosts: localhost
+  connection: local
+  become: false
+  tasks:
+
+    - name: Recopilar información de todos los hosts gestionados
+      ansible.builtin.setup:
+        filter: ansible_*_*_*
+      delegate_to: "{{ item }}"
+      loop: "{{ groups['blackforge_servers'] }}"
+      register: system_facts
+
+    - name: Generar archivo de reporte
+      ansible.builtin.copy:
+        content: |
+          REPORTE DE ESTADO DEL SISTEMA - BLACKFORGE LABS
+          Fecha: {{ ansible_date_time.iso8601 }}
+          =================================================
+          {% for host in system_facts.results %}
+          HOST: {{ host.ansible_facts.hostname }}
+          Estado: {{ 'ALIVE' if host is defined else 'UNREACHABLE' }}
+          IP Address: {{ host.ansible_facts.default_ipv4.address if host.ansible_facts.default_ipv4 is defined else 'N/A' }}
+          CPU Cores: {{ host.ansible_facts.processor_vcpus if host.ansible_facts.processor_vcpus is defined else 'N/A' }}
+          Memory Total: {{ host.ansible_facts.ansible_memory_mb.real.total if host.ansible_facts.ansible_memory_mb is defined else 'N/A' }} MB
+          Memory Used: {{ host.ansible_facts.ansible_memory_mb.real.used if host.ansible_facts.ansible_memory_mb is defined else 'N/A' }} MB
+          Disk Usage: {{ host.ansible_facts.devices.sda.size if host.ansible_facts.devices is defined and host.ansible_facts.devices.sda is defined else 'N/A' }}
+          -------------------------------------------------
+          {% endfor %}
+        dest: /opt/playbooks/reports/daily_report_{{ ansible_date_time.date }}.txt

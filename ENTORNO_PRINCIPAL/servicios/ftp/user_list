@@ -1,0 +1,3 @@
+# Lista de usuarios de sistema vsftpd para BlackForge Labs
+# Este archivo se mantiene vacío ya que estamos usando autenticación de usuarios virtuales
+# Los usuarios virtuales se administran mediante PAM y la base de datos de usuarios virtuales

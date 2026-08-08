@@ -1,0 +1,57 @@
+#
+# Configuración maestra de Postfix - BlackForge Labs
+# Tipo de servicio: entrenoamiento CTF
+#
+
+# Servicio SMTP principal
+smtp      inet  n       -       y       -       1       postscreen
+smtpd     pass  -       -       y       -       -       smtpd
+dnsblog   unix  -       -       y       -       0       dnsblog
+tlsproxy  unix  -       -       y       -       0       tlsproxy
+submission inet n       -       y       -       -       smtpd
+  -o syslog_name=postfix/submission
+  -o smtpd_tls_security_level=encrypt
+  -o smtpd_sasl_auth_enable=yes
+  -o smtpd_sasl_type=dovecot
+  -o smtpd_sasl_path=private/auth
+  -o smtpd_reject_unlisted_recipient=no
+  -o smtpd_recipient_restrictions=
+  -o milter_macro_daemon_name=ORIGINATING
+pickup    unix  n       -       y       60      1       pickup
+cleanup   unix  n       -       y       -       0       cleanup
+qmgr      unix  n       -       n       300     1       qmgr
+tlsmgr    unix  -       -       y       1000?   1       tlsmgr
+rewrite   unix  -       -       y       -       -       trivial-rewrite
+bounce    unix  -       -       y       -       0       bounce
+defer     unix  -       -       y       -       0       bounce
+trace     unix  -       -       y       -       0       bounce
+verify    unix  -       -       y       -       1       verify
+flush     unix  n       -       y       1000?   0       flush
+proxymap  unix  -       -       n       -       -       proxymap
+proxywrite unix -       -       n       -       -       proxymap
+smtp      unix  -       -       y       -       -       smtp
+relay     unix  -       -       y       -       -       smtp
+showq     unix  n       -       y       -       -       showq
+error     unix  -       -       y       -       -       error
+retry     unix  -       -       y       -       -       error
+discard   unix  -       -       y       -       -       discard
+local     unix  -       -       y       -       -       local
+virtual   unix  -       -       y       -       -       virtual
+lmtp      unix  -       -       y       -       -       lmtp
+anvil     unix  -       -       y       -       1       anvil
+scache    unix  -       -       y       -       1       scache
+postlog   unix-dgram n  -       n       -       1       postlogd
+
+# Servicios de recuperación
+maildrop  unix  -       n       n       -       -       pipe
+  flags=DRhu user=vmail argv=/usr/local/bin/maildrop -d ${recipient}
+uucp      unix  -       n       n       -       -       pipe
+  flags=Fqhu user=uucp argv=uux -r -n -z -u$sender - $recipient
+ifmail    unix  -       n       n       -       -       pipe
+  flags=F user=ftn argv=/usr/local/bin/ifmail -t $recipient ${extension}
+bsmtp     unix  -       n       n       -       -       pipe
+  flags=Fq. user=bsmtp argv=/usr/local/bin/bsmtp -t $recipient ${extension}
+scalemail-backend unix - n    n   -   2   pipe
+  flags=R user=scalemail argv=/usr/local/bin/scalemail -d ${recipient}
+mailman   unix  -       n       n       -       -       pipe
+  flags=FR user=list argv=/usr/local/bin/mailman -post ${list} ${recipient} ${etc}

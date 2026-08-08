@@ -1,0 +1,127 @@
+# Configuración básica de Prometheus para BlackForge Labs
+# Entorno Secundario - Monitoreo de métricas y alertas
+
+# Configuración global
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Configuración de reglas de alerta
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# Configuración de sistemas a monitorear
+scrape_configs:
+  # Monitoreo de Prometheus mismo
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Monitoreo de Node Exporter (si se despliega)
+  # - job_name: "node"
+  #   static_configs:
+  #     - targets: ["localhost:9100"]
+  #     - labels:
+  #         instance: "node-exporter"
+
+  # Monitoreo de servicios de blackforge
+  - job_name: "blackforge_router"
+    static_configs:
+      - targets: ["router:2601"]
+    metrics_path: /
+    scheme: http
+
+  - job_name: "blackforge_vpn"
+    static_configs:
+      - targets: ["vpn-server:1194"]
+    metrics_path: /
+    scheme: http
+
+  - job_name: "blackforge_snort"
+    static_configs:
+      - targets: ["ids-snort:80"]
+    metrics_path: /
+    scheme: http
+
+  - job_name: "blackforge_suricata"
+    static_configs:
+      - targets: ["ids-suricata:80"]
+    metrics_path: /
+    scheme: http
+
+  - job_name: "blackforge_elasticsearch"
+    static_configs:
+      - targets: ["elasticsearch:9200"]
+    metrics_path: /
+    scheme: http
+
+  - job_name: "blackforge_logstash"
+    static_configs:
+      - targets: ["logstash:5044"]
+    metrics_path: /
+    scheme: http
+
+  - job_name: "blackforge_kibana"
+    static_configs:
+      - targets: ["kibana:5601"]
+    metrics_path: /
+    scheme: http
+
+  - job_name: "blackforge_prometheus"
+    static_configs:
+      - targets: ["prometheus:9090"]
+    metrics_path: /
+    scheme: http
+
+  - job_name: "blackforge_grafana"
+    static_configs:
+      - targets: ["grafana:3000"]
+    metrics_path: /
+    scheme: http
+
+  # Monitoreo de servicios del entorno principal (a través de filebeat u otros medios)
+  - job_name: "blackforge_principal_web"
+    static_configs:
+      - targets: ["host.docker.internal:80"]  # Acceso al entorno principal mediante host.docker.internal
+    metrics_path: /healthz
+    scheme: http
+
+  - job_name: "blackforge_principal_db"
+    static_configs:
+      - targets: ["host.docker.internal:3306"]
+    # Para MySQL, se necesitaría un exporter específico
+    metrics_path: /
+    scheme: tcp
+
+# Configuración de alerting
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+    # timeout para alerts
+    timeout: 10s
+    api_version: v2
+    # esquema de conexión
+    # scheme: http
+    # timeout: 10s
+    # version: v1
+    # path_prefix: /
+
+# Configuración de almacenamiento de datos temporales
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 15d
+    #retention.size: 10GB
+    # In vecas de usar el disco duro de la máquina, se puede especificar retention.size
+    # para limitar el uso de espacio en disco
+
+# Configuración de notificaciones y plantillas
+# templates:
+#   - /etc/prometheus/template/*.tmpl
+
+# Configuración de reglas de grabación y alertas
+# rule_files:
+#   - "rules/*.yml"

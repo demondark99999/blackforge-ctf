@@ -1,0 +1,33 @@
+# Configuración básica de Elasticsearch para BlackForge Labs
+# Entorno Secundario - Monitoreo y análisis de logs
+
+# Nombre del clúster y nodo
+cluster.name: blackforge-monitoring
+node.name: ${HOSTNAME}
+
+# Configuración de red
+network.host: 0.0.0.0
+http.port: 9200
+transport.tcp.port: 9300
+
+# Configuración de memoria (importante para contenedores)
+bootstrap.memory_lock: true
+
+# Configuración de almacenamiento
+path.data: /usr/share/elasticsearch/data
+path.logs: /var/log/elasticsearch
+
+# Configuración de seguridad (deshabilitada para entorno de entrenamiento)
+xpack.security.enabled: false
+xpack.monitoring.enabled: true
+#xpack.license.self_generated.type: trial
+
+# Configuración de índices
+indices.fielddata.cache.size: 40%
+indices.queries.cache.size: 2%
+indices.queries.cache.affected: query_suggest,completion,fielddata_load,fielddata_warmer,aliases_get
+
+# Configuración de recuperación
+gateway.recover_after_nodes: 1
+gateway.recover_after_time: 5m
+gateway.expected_nodes: 1

@@ -1,0 +1,316 @@
+version: '3.8'
+
+services:
+  # Router Principal (OSPF/BGP)
+  router:
+    build:
+      context: ./servicios/router
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    volumes:
+      - ./servicios/router/config:/etc/quagga
+      - ./servicios/router/logs:/var/log/quagga
+    ports:
+      - "2601:2601"  # VTYSH para telnet
+      - "2602:2602"  # BGP
+      - "2603:2603"  # RIP
+      - "2604:2604"  # OSPF
+    networks:
+      - management
+      - dmz
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "vtysh", "-c", "show ip route"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Servidor VPN (OpenVPN)
+  vpn-server:
+    build:
+      context: ./servicios/vpn
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./servicios/vpn/config:/etc/openvpn
+      - ./servicios/vpn/keys:/etc/openvpn/keys
+      - ./servicios/vpn/logs:/var/log/openvpn
+      - vpn_data:/var/lib/openvpn
+    ports:
+      - "1194:1194/udp"
+    environment:
+      - VPN_SUBNET=10.8.0.0
+      - VPN_NETMASK=255.255.255.0
+    networks:
+      - management
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "netstat", "-tunlp", "|", "grep", "1194"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Sistema de Detección de Intrusiones (Snort)
+  ids-snort:
+    build:
+      context: ./servicios/ids/snort
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./servicios/ids/snort/config:/etc/snort
+      - ./servicios/ids/snort/rules:/etc/snort/rules
+      - ./servicios/ids/snort/logs:/var/log/snort
+      - snort_data:/var/log/snort
+      - ./ENTORNO_PRINCIPAL/infra/nginx:/var/log/nginx:ro  # Para monitoreo de tráfico web
+      - ./ENTORNO_PRINCIPAL/servicios/web-app/src:/var/www/html:ro  # Para monitoreo de tráfico de aplicación
+    ports:
+      - "8080:80"  # ParaインターフェースのWeb UI (BASE)
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "snort"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Sistema de Prevención de Intrusiones (Suricata)
+  ids-suricata:
+    build:
+      context: ./servicios/ids/suricata
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./servicios/ids/suricata/config:/etc/suricata
+      - ./servicios/ids/suricata/rules:/etc/suricata/rules
+      - ./servicios/ids/suricata/logs:/var/log/suricata
+      - suricata_data:/var/log/suricata
+      - ./ENTORNO_PRINCIPAL/infra/nginx:/var/log/nginx:ro
+      - ./ENTORNO_PRINCIPAL/servicios/web-app/src:/var/www/html:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "suricata"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Plataforma SIEM - Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.0.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+      - ./servicios/logging/elasticsearch/config:/usr/share/elasticsearch/config
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=50s"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Plataforma SIEM - Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.0.0
+    container_name: logstash
+    volumes:
+      - ./servicios/logging/logstash/pipeline:/usr/share/logstash/pipeline
+      - ./servicios/logging/logstash/config:/usr/share/logstash/config
+      - ./servicios/logging/logstash/logs:/usr/share/logstash/logs
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    environment:
+      - LS_JAVA_OPTS="-Xmx256m -Xmx256m"
+    networks:
+      - monitoring
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9600/_node/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Plataforma SIEM - Kibana (usando en lugar de Graylog para variedad)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.0.0
+    container_name: kibana
+    volumes:
+      - ./servicios/logging/kibana/config:/usr/share/kibana/config
+      - ./servicios/logging/kibana/plugins:/usr/share/kibana/plugins
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - monitoring
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Agente de Envío de Logs (Filebeat) para monitorear el entorno principal
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.0.0
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./servicios/logging/filebeat/config/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./ENTORNO_PRINCIPAL/infra/nginx/logs:/var/log/nginx:ro
+      - ./ENTORNO_PRINCIPAL/servicios/web-app/logs:/var/log/www:ro
+      - ./ENTORNO_PRINCIPAL/servicios/db/logs:/var/log/mysql:ro
+      - ./ENTORNO_PRINCIPAL/servicios/cache/logs:/var/log/redis:ro
+      - ./ENTORNO_PRINCIPAL/servicios/mail/logs:/var/log/mail:ro
+      - ./ENTORNO_PRINCIPAL/servicios/ftp/logs:/var/log/vsftpd:ro
+      - ./ENTORNO_PRINCIPAL/servicios/web-app/src:/var/www/html:ro
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD", "filebeat", "test", "output"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Sistema de Alerta y Notificación
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: alertmanager
+    volumes:
+      - ./servicios/logging/alertmanager/config:/etc/alertmanager
+      - ./servicios/logging/alertmanager/data:/var/lib/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9093/-/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Sistema de Monitoreo de Métricas (Prometheus)
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus
+    volumes:
+      - ./servicios/logging/prometheus/config:/etc/prometheus
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/-/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Panel de Visualización de Seguridad (Grafana)
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./servicios/logging/grafana/provisioning:/etc/grafana/provisioning
+      - ./servicios/logging/grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Sistema de Gestión de Configuración y Automatización (Ansible Tower/AWX simplificado)
+  automation:
+    build:
+      context: ./servicios/automation
+    volumes:
+      - ./servicios/automation/config:/etc/ansible
+      - ./servicios/automation/playbooks:/opt/playbooks
+      - ./servicios/automation/inventory:/etc/ansible/hosts
+      - ./servicios/automation/logs:/var/log/ansible
+      - ./ENTORNO_PRINCIPAL:/mnt/entorno_principal:ro
+    networks:
+      - management
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ansible", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  management:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+  dmz:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+  internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
+  monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
+          gateway: 172.23.0.1
+
+volumes:
+  vpn_data:
+  snort_data:
+  suricata_data:
+  esdata:
+  prometheus_data:
+  grafana_data:
